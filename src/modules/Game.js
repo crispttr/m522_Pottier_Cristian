@@ -13,32 +13,49 @@ Interaction avec les autres modules :
 */
 
 'use strict'
-export const initGame = async (gameBoard) => {
-  const API_URL = 'https://progweb-wwwordle-api.onrender.com'
+import { Answer } from './Answer.js'
 
-  try {
-    const response = await fetch(`${API_URL}/new-game`)
-    const data = await response.json()
+export class Game {
+  constructor(maxAttempts) {
+    this.maxAttempts = maxAttempts
+    this.currentAttempt = 0
+    this.answers = []
+    this.messageElement = document.querySelector('.message')
+    this.board = document.querySelector('.board')
 
-    // Initialisation de l'état du jeu
-    window.gameState = {
-      attempts: 0,
-      maxAttempts: 6,
-      gameId: data.gameId,
-    }
+    this.initGame()
+  }
 
-    // Création de la grille
-    for (let i = 0; i < 6; i++) {
-      const row = document.createElement('div')
-      row.className = 'row'
-      for (let j = 0; j < 5; j++) {
-        const cell = document.createElement('div')
-        cell.className = 'cell'
-        row.appendChild(cell)
+  async initGame() {
+    try {
+      const response = await fetch(
+        'https://progweb-wwwordle-api.onrender.com/new-game'
+      )
+      const data = await response.json()
+
+      for (let i = 0; i < this.maxAttempts; i++) {
+        const answer = new Answer(i)
+        this.answers.push(answer)
+        this.board.appendChild(answer.form)
       }
-      gameBoard.appendChild(row)
+
+      this.answers[0].setActive(true)
+    } catch (error) {
+      console.error('Erreur:', error)
+      this.showMessage('Impossible de démarrer une nouvelle partie')
     }
-  } catch (error) {
-    console.error('Erreur:', error)
+  }
+
+  nextAttempt() {
+    if (this.currentAttempt < this.maxAttempts - 1) {
+      this.answers[this.currentAttempt].setActive(false)
+      this.currentAttempt++
+      this.answers[this.currentAttempt].setActive(true)
+    }
+  }
+
+  static showMessage(message) {
+    const messageElement = document.querySelector('.message')
+    messageElement.textContent = message
   }
 }

@@ -12,45 +12,108 @@ Interaction avec les autres modules :
 - Informe le jeu des résultats après validation (pour savoir si l’essai est correct ou non).
 - Peut déclencher un message d’erreur ou de victoire, mais l’affichage final est géré par le jeu.
 */ 'use strict'
-export const handleAnswer = async (guess, gameBoard) => {
-  const API_URL = 'https://progweb-wwwordle-api.onrender.com'
-
-  if (guess.length !== 5) {
-    alert('Le mot doit contenir 5 lettres')
-    return
+export class Answer {
+  constructor(rowIndex) {
+    this.form = this.createForm(rowIndex)
+    this.setupKeyboardNavigation()
+    this.setupFormSubmission()
+    this.setActive(false)
   }
 
-  try {
-    const response = await fetch(`${API_URL}/guess`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        gameId: window.gameState.gameId,
-        guess: guess.toUpperCase(),
-      }),
-    })
+  createForm(rowIndex) {
+    const form = document.createElement('form')
+    form.className = 'row'
+    form.id = `row-${rowIndex}`
+    form.setAttribute('inert', '')
 
-    const data = await response.json()
-
-    // Mise à jour de la grille
-    const currentRow = gameBoard.children[window.gameState.attempts]
     for (let i = 0; i < 5; i++) {
-      const cell = currentRow.children[i]
-      cell.textContent = guess[i].toUpperCase()
-      cell.className = `cell ${data.result[i]}`
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.className = 'letter'
+      input.name = `letter-${i}`
+      input.id = `row-${rowIndex}--${i}`
+      input.maxLength = 1
+      form.appendChild(input)
     }
 
-    window.gameState.attempts++
+    const submit = document.createElement('input')
+    submit.type = 'submit'
+    submit.hidden = true
+    form.appendChild(submit)
 
-    // Message de victoire ou défaite
-    if (data.correct) {
-      alert('Bravo ! Vous avez gagné !')
-    } else if (window.gameState.attempts >= window.gameState.maxAttempts) {
-      alert('Game Over !')
+    return form
+  }
+
+  setActive(active) {
+    if (active) {
+      this.form.removeAttribute('inert')
+      this.focusFirstInput()
+    } else {
+      this.form.setAttribute('inert', '')
     }
-  } catch (error) {
-    console.error('Erreur:', error)
+  }
+
+  focusFirstInput() {
+    this.form.querySelector('input').focus()
+  }
+
+  setupKeyboardNavigation() {
+    const inputs = this.form.querySelectorAll('input[type="text"]')
+
+    inputs.forEach((input, index) => {
+      input.addEventListener('keyup', (event) => {
+        if (this.isAlphaNumericKey(event.key) || event.key === 'ArrowRight') {
+          if (index < inputs.length - 1) {
+            inputs[index + 1].focus()
+          }
+        } else if (event.key === 'ArrowLeft' && index > 0) {
+          inputs[index - 1].focus()
+        }
+      })
+    })
+  }
+
+  isAlphaNumericKey(key) {
+    return /^([\x30-\x39]|[\x61-\x7a])$/i.test(key)
+  }
+
+  setupFormSubmission() {
+    this.form.addEventListener('submit', async (event) => {
+      event.preventDefault()
+
+      const guess = Array.from(this.form.querySelectorAll('input[type="text"]'))
+        .map((input) => input.value)
+        .join('')
+
+      if (guess.length !== 5) {
+        Game.showMessage('Le mot doit contenir 5 lettres')
+        return
+      }
+
+      try {
+        const response = await fetch(
+          'https://progweb-wwwordle-api.onrender.com/guess',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ guess: guess.toUpperCase() }),
+          }
+        )
+
+        const data = await response.json()
+
+        if (data.status === 'invalid') {
+          Game.showMessage(data.message)
+          return
+        }
+
+        return data
+      } catch (error) {
+        console.error('Erreur:', error)
+        Game.showMessage('Une erreur est survenue')
+      }
+    })
   }
 }

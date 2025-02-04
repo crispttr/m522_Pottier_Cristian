@@ -9,32 +9,8 @@ Interaction avec les autre modules
 */
 
 'use strict'
-import { initGame } from './modules/Game.js'
-import { handleAnswer } from './modules/Answer.js'
+import { Game } from './modules/Game.js'
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Création du tableau de jeu
-  const gameBoard = document.createElement('div')
-  gameBoard.className = 'game-board'
-  document.body.appendChild(gameBoard)
-
-  // Création de l'input pour les réponses
-  const input = document.createElement('input')
-  input.type = 'text'
-  input.maxLength = 5
-  document.body.appendChild(input)
-
-  // Création du bouton de soumission
-  const submitButton = document.createElement('button')
-  submitButton.textContent = 'Soumettre'
-  document.body.appendChild(submitButton)
-
-  // Initialisation du jeu
-  initGame(gameBoard)
-
-  // Gestion des soumissions
-  submitButton.addEventListener('click', () => {
-    handleAnswer(input.value, gameBoard)
-    input.value = ''
-  })
+  const game = new Game(5)
 })
