@@ -11,7 +11,10 @@ Interaction avec les autres modules :
 - Est créé et géré par le module du jeu (chaque partie possède un certain nombre de tentatives).
 - Informe le jeu des résultats après validation (pour savoir si l’essai est correct ou non).
 - Peut déclencher un message d’erreur ou de victoire, mais l’affichage final est géré par le jeu.
-*/ 'use strict'
+*/
+
+'use strict'
+
 export class Answer {
   constructor(rowIndex) {
     this.form = this.createForm(rowIndex)
@@ -95,6 +98,7 @@ export class Answer {
           'https://progweb-wwwordle-api.onrender.com/guess',
           {
             method: 'POST',
+            guess: 'ABOUT',
             headers: {
               'Content-Type': 'application/json',
             },
@@ -115,5 +119,27 @@ export class Answer {
         Game.showMessage('Une erreur est survenue')
       }
     })
+  }
+  updateFeedback(feedback) {
+    const inputs = this.form.querySelectorAll('input[type="text"]')
+    inputs.forEach((input, index) => {
+      input.className = `letter ${feedback[index]}`
+    })
+  }
+
+  async handleGuess(feedback) {
+    if (feedback.every((f) => f === 'correct')) {
+      Game.showMessage('Félicitations ! Vous avez gagné !')
+      this.endGame()
+    } else if (this.currentAttempt === this.maxAttempts - 1) {
+      Game.showMessage('Dommage tu as perdu !')
+      this.endGame()
+    } else {
+      this.nextAttempt()
+    }
+  }
+
+  endGame() {
+    this.answers.forEach((answer) => answer.setActive(false))
   }
 }

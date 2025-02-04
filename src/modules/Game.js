@@ -13,6 +13,7 @@ Interaction avec les autres modules :
 */
 
 'use strict'
+//Importantion de answer
 import { Answer } from './Answer.js'
 
 export class Game {
@@ -26,6 +27,7 @@ export class Game {
     this.initGame()
   }
 
+  //Initialisation de la partie
   async initGame() {
     try {
       const response = await fetch(
